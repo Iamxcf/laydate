@@ -375,6 +375,7 @@
   Class.prototype.config = {
     type: 'date' //控件类型，支持：year/month/date/time/datetime
     ,range: false //是否开启范围选择，即双控件
+    ,rangeSameDay:false //显示多月,不是范围选择,只选一天
     ,format: 'yyyy-MM-dd' //默认日期格式
     ,value: null //默认日期，支持传入new Date()，或者符合format参数设定的日期格式字符
     ,min: '1900-1-1' //有效最小日期，年月日必须用“-”分割，时分秒必须用“:”分割。注意：它并不是遵循 format 设定的格式。
@@ -382,11 +383,12 @@
     ,trigger: 'focus' //呼出控件的事件
     ,show: false //是否直接显示，如果设置true，则默认直接显示控件
     ,showBottom: true //是否显示底部栏
-    ,btns: ['clear', 'now', 'confirm'] //右下角显示的按钮，会按照数组顺序排列
+    // ,btns: ['clear', 'now', 'confirm'] //右下角显示的按钮，会按照数组顺序排列
+    ,btns:['clear', 'now']
     ,lang: 'cn' //语言，只支持cn/en，即中文和英文
     ,theme: 'default' //主题
     ,position: null //控件定位方式定位, 默认absolute，支持：fixed/absolute/static
-    ,calendar: false //是否开启公历重要节日，仅支持中文版
+    ,calendar: true //是否开启公历重要节日，仅支持中文版
     ,mark: {} //日期备注，如重要事件或活动标记
     ,zIndex: null //控件层叠顺序
     ,done: null //控件选择完毕后的回调，点击清空/现在/确定也均会触发
@@ -409,7 +411,7 @@
         ,tools: {
           confirm: '确定'
           ,clear: '清空'
-          ,now: '现在'
+          ,now: '今天'
         }
       }
       ,en: {
@@ -513,7 +515,6 @@
       ,'0-10-1': '国庆'
       ,'0-12-25': '圣诞'
     } : {}, options.mark);
-    
     //获取限制内日期
     lay.each(['min', 'max'], function(i, item){
       var ymd = [], hms = [];
@@ -541,7 +542,6 @@
         ,seconds: hms[2] | 0
       };
     });
-    
     that.elemID = 'layui-laydate'+ options.elem.attr('lay-key');
     
     if(options.show || isStatic) that.render();
@@ -569,7 +569,7 @@
       id: that.elemID
       ,'class': [
         'layui-laydate'
-        ,options.range ? ' layui-laydate-range' : ''
+        ,(options.range || options.rangeSameDay) ? ' layui-laydate-range' : ''
         ,isStatic ? (' '+ ELEM_STATIC) : ''
         ,options.theme && options.theme !== 'default' && !/^#/.test(options.theme) ? (' laydate-theme-' + options.theme) : ''
       ].join('')
@@ -590,10 +590,9 @@
     
     //单双日历区域
     lay.each(new Array(2), function(i){
-      if(!options.range && i > 0){
+      if(!options.range && !options.rangeSameDay && i > 0){
         return true;
       }
-
       //头部区域
       var divHeader = lay.elem('div', {
         'class': 'layui-laydate-header'
@@ -1019,7 +1018,8 @@
     
     prevMaxDate = laydate.getEndDate(dateTime.month || 12, dateTime.year); //计算上个月的最后一天
     thisMaxDate = laydate.getEndDate(dateTime.month + 1, dateTime.year); //计算当前月的最后一天
-    
+    // 多月显示,只显示第一个高亮
+    var rangeSameDayActive = false
     //赋值日
     lay.each(tds, function(index, item){
       var YMD = [dateTime.year, dateTime.month], st = 0;
@@ -1032,7 +1032,12 @@
       } else if(index >= startWeek && index < thisMaxDate + startWeek){
         st = index - startWeek;
         if(!options.range){
-          st + 1 === dateTime.date && item.addClass(THIS);
+          if(options.rangeSameDay){
+            // 只要当月日期高亮 ,暂时做不了,干脆都不高亮
+          }else{
+            st + 1 === dateTime.date && item.addClass(THIS);
+
+          }
         }
       } else {
         st = index - thisMaxDate - startWeek;
@@ -1092,6 +1097,13 @@
     
     //赋值双日历
     if(options.range && !value){
+      var EYM = that.getAsYM(dateTime.year, dateTime.month)
+      that.calendar(lay.extend({}, dateTime, {
+        year: EYM[0]
+        ,month: EYM[1]
+      }));
+    }
+    if(options.rangeSameDay && !value){
       var EYM = that.getAsYM(dateTime.year, dateTime.month)
       that.calendar(lay.extend({}, dateTime, {
         year: EYM[0]
@@ -1829,6 +1841,8 @@
   //核心接口
   laydate.render = function(options){
     var inst = new Class(options);
+    console.log(thisDate);
+    
     return thisDate.call(inst);
   };
   
