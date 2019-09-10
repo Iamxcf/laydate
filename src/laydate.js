@@ -569,7 +569,7 @@
       id: that.elemID
       ,'class': [
         'layui-laydate'
-        ,(options.range || options.rangeSameDay) ? ' layui-laydate-range' : ''
+        ,(options.range || options.rangeSameDay) ? ' layui-laydate-range' : ''   //此css类名起左右排列作用
         ,isStatic ? (' '+ ELEM_STATIC) : ''
         ,options.theme && options.theme !== 'default' && !/^#/.test(options.theme) ? (' laydate-theme-' + options.theme) : ''
       ].join('')
@@ -587,10 +587,9 @@
     });
     
     if(options.zIndex) elem.style.zIndex = options.zIndex;
-    
     //单双日历区域
     lay.each(new Array(2), function(i){
-      if(!options.range && !options.rangeSameDay && i > 0){
+      if(!options.range && !options.rangeSameDay && i > 0){  // 渲染双日历面板条件
         return true;
       }
       //头部区域
@@ -721,7 +720,6 @@
       document.body.appendChild(elem)
       ,that.position() //定位
     );
-    
     that.checkDate().calendar(); //初始校验
     that.changeEvent(); //日期切换
     
@@ -957,7 +955,7 @@
         mark = title || YMD[2];
       }
     });
-    mark && td.html('<span class="laydate-day-mark">'+ mark +'</span>');
+    mark && td.html('<span class="laydate-day-mark" title="'+mark+'">'+ mark +'</span>');
     
     return that;
   };
@@ -993,6 +991,8 @@
   
   //日历表
   Class.prototype.calendar = function(value){
+    console.log(value);
+    
     var that = this
     ,options = that.config
     ,dateTime = value || options.dateTime
@@ -1018,8 +1018,7 @@
     
     prevMaxDate = laydate.getEndDate(dateTime.month || 12, dateTime.year); //计算上个月的最后一天
     thisMaxDate = laydate.getEndDate(dateTime.month + 1, dateTime.year); //计算当前月的最后一天
-    // 多月显示,只显示第一个高亮
-    var rangeSameDayActive = false
+    
     //赋值日
     lay.each(tds, function(index, item){
       var YMD = [dateTime.year, dateTime.month], st = 0;
@@ -1033,12 +1032,16 @@
         st = index - startWeek;
         if(!options.range){
           if(options.rangeSameDay){
-            // 只要当月日期高亮 ,暂时做不了,干脆都不高亮
+            // 第一次调用时行参value为空,这时一次渲染当月面板
+            // 因为原型方法calendar存在递归,递归后传入的value为对象,渲染下一个月面板
+            if(st + 1 === dateTime.date && !value){ //通过value判断,只是当前月日期进行高亮 
+               item.addClass(THIS);   //选中时td背景高亮
+            }
           }else{
-            st + 1 === dateTime.date && item.addClass(THIS);
-
+            st + 1 === dateTime.date && item.addClass(THIS);   //选中时td背景高亮
           }
         }
+       
       } else {
         st = index - thisMaxDate - startWeek;
         item.addClass('laydate-day-next');
@@ -1841,8 +1844,6 @@
   //核心接口
   laydate.render = function(options){
     var inst = new Class(options);
-    console.log(thisDate);
-    
     return thisDate.call(inst);
   };
   
